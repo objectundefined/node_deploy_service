@@ -10,6 +10,34 @@ var env = nDeploy && _.isObject(nDeploy.env) ? nDeploy.env : {};
 
 env['PORT'] = 8080 ;
 
+var Child = function(proc,keepAlive){
+	
+	this.createChild(proc,keepAlive);
+	
+};
+
+Child.prototype.createChild = function(proc,keepAlive){
+	
+	var _this = this ;
+	_this.process = fork( proc  ,[], {
+		
+		env : _.extend({},process.env,env) ,
+		cwd : sourcePath
+		
+	});
+
+	if ( keepAlive ) {
+		
+		_this.process.on('exit',function(){
+			console.log( "Child %s exited. Restarting." , proc )
+			_this.process = _this.createChild( proc , keepAlive );
+			
+		})
+		
+	}
+	
+};
+
 if ( nDeploy && _.isArray(nDeploy.processes) ) {
 	
 	nDeploy.processes.forEach(function(proc){
@@ -45,33 +73,3 @@ if ( nDeploy && _.isArray(nDeploy.processes) ) {
 	});
 	
 }
-
-function Child(proc,keepAlive){
-	
-	this.createChild(proc,keepAlive);
-	
-	return this ;
-	
-};
-
-Child.prototype.createChild = function(proc,keepAlive){
-	
-	var _this = this ;
-	_this.process = fork( proc  ,[], {
-		
-		env : _.extend({},process.env,env) ,
-		cwd : sourcePath
-		
-	});
-
-	if ( keepAlive ) {
-		
-		_this.process.on('exit',function(){
-			console.log( "Child %s exited. Restarting." , proc )
-			_this.process = _this.createChild( proc , keepAlive );
-			
-		})
-		
-	}
-	
-};
